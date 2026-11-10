@@ -11,7 +11,7 @@ import net.minecraftforge.fml.common.gameevent.TickEvent;
 public class WTapModule extends Module {
     private final NumberSetting chance = new NumberSetting("Chance", 75, 0, 100, 5);
     private final NumberSetting delay = new NumberSetting("Delay", 50, 0, 300, 5);
-    private int ticksRemaining;
+    private long restoreAt;
     private boolean restoreSprint;
 
     public WTapModule() {
@@ -28,22 +28,20 @@ public class WTapModule extends Module {
         if (Math.random() * 100.0D >= chance.getValue()) return;
 
         EntityPlayerSP player = mc.thePlayer;
-        restoreSprint = player.isSprinting();
-        if (!restoreSprint) return;
+        if (!player.isSprinting()) return;
+        restoreSprint = true;
         player.setSprinting(false);
-        ticksRemaining = Math.max(1, (int) Math.ceil(delay.getValue() / 50.0D));
+        restoreAt = System.currentTimeMillis() + (long) delay.getValue();
     }
 
     @SubscribeEvent
     public void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || !isEnabled() || ticksRemaining <= 0) return;
-        ticksRemaining--;
-        if (ticksRemaining > 0) return;
+        if (event.phase != TickEvent.Phase.END || !isEnabled() || !restoreSprint) return;
+        if (System.currentTimeMillis() < restoreAt) return;
 
         Minecraft mc = Minecraft.getMinecraft();
         EntityPlayerSP player = mc.thePlayer;
-        if (restoreSprint && player != null && !player.isDead
-                && mc.gameSettings.keyBindForward.isKeyDown()) {
+        if (player != null && !player.isDead && mc.gameSettings.keyBindForward.isKeyDown()) {
             player.setSprinting(true);
         }
         restoreSprint = false;
@@ -51,7 +49,7 @@ public class WTapModule extends Module {
 
     @Override
     protected void onDisable() {
-        ticksRemaining = 0;
         restoreSprint = false;
+        restoreAt = 0L;
     }
 }
