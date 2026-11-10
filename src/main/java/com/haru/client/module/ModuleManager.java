@@ -27,7 +27,6 @@ public class ModuleManager {
         for (String name : combat) add(name, "Configuration placeholder; behavior not implemented", Category.COMBAT);
         register(new JumpResetModule());
         register(new WTapModule());
-        register(new BlockHitModule());
 
         String[] player = {"InvManager", "Stealer", "FastPlace", "LegitScaffold", "BridgeAssist",
                 "Sprint", "Blink", "NoSlow", "NoFall"};
