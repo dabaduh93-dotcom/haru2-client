@@ -1,29 +1,25 @@
 package com.haru.client.settings;
 
 public class NumberSetting extends Setting<Double> {
-    private final double minimum;
-    private final double maximum;
-    private final double increment;
+    private final double min;
+    private final double max;
+    private final double step;
 
-    public NumberSetting(String name, double value, double minimum, double maximum, double increment) {
-        super(name, clamp(value, minimum, maximum));
-        if (minimum > maximum) throw new IllegalArgumentException("minimum cannot exceed maximum");
-        if (increment <= 0) throw new IllegalArgumentException("increment must be positive");
-        this.minimum = minimum;
-        this.maximum = maximum;
-        this.increment = increment;
+    public NumberSetting(String name, double defaultValue, double min, double max, double step) {
+        super(name, clamp(defaultValue, min, max));
+        if (min > max || step <= 0) throw new IllegalArgumentException("Invalid number setting bounds");
+        this.min = min;
+        this.max = max;
+        this.step = step;
     }
 
-    @Override
-    public void setValue(Double value) {
-        super.setValue(clamp(value, minimum, maximum));
-    }
+    public void increase() { setValue(Math.min(max, getValue() + step)); }
+    public void decrease() { setValue(Math.max(min, getValue() - step)); }
+    public double getMin() { return min; }
+    public double getMax() { return max; }
+    public double getStep() { return step; }
 
     private static double clamp(double value, double min, double max) {
         return Math.max(min, Math.min(max, value));
     }
-
-    public double getMinimum() { return minimum; }
-    public double getMaximum() { return maximum; }
-    public double getIncrement() { return increment; }
 }
