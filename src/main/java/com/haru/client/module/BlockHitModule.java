@@ -25,7 +25,7 @@ public class BlockHitModule extends Module {
     public void onAttack(AttackEntityEvent event) {
         Minecraft mc = Minecraft.getMinecraft();
         if (!isEnabled() || mc.thePlayer == null || mc.theWorld == null) return;
-        if (event.entityPlayer != mc.thePlayer || releasePending) return;
+        if (event.entityPlayer != mc.thePlayer || releasePending || mc.thePlayer.isUsingItem()) return;
 
         ItemStack held = mc.thePlayer.getHeldItem();
         if (held == null || (onlySword.getValue() && !(held.getItem() instanceof ItemSword))) return;
