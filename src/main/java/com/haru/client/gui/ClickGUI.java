@@ -3,6 +3,9 @@ package com.haru.client.gui;
 import com.haru.client.HaruClient;
 import com.haru.client.module.Category;
 import com.haru.client.module.Module;
+import com.haru.client.settings.BooleanSetting;
+import com.haru.client.settings.NumberSetting;
+import com.haru.client.settings.Setting;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.Gui;
 import org.lwjgl.input.Mouse;
@@ -24,6 +27,7 @@ public class ClickGUI extends GuiScreen {
     private static final int ROW = 0xFF1D1D29;
     private static final int ROW_HOVER = 0xFF303044;
     private final Map<Category, Integer> scroll = new EnumMap<Category, Integer>(Category.class);
+    private Module selectedModule;
 
     public ClickGUI() {
         for (Category category : Category.values()) scroll.put(category, 0);
@@ -53,28 +57,74 @@ public class ClickGUI extends GuiScreen {
                 int y = TOP + HEADER_HEIGHT + i * ROW_HEIGHT;
                 boolean hovered = mouseX >= x && mouseX <= x + PANEL_WIDTH && mouseY >= y && mouseY < y + ROW_HEIGHT;
                 Gui.drawRect(x + 2, y, x + PANEL_WIDTH - 2, y + ROW_HEIGHT - 1, hovered ? ROW_HOVER : ROW);
-                int color = module.isEnabled() ? PURPLE : 0xFFB8B8C5;
-                fontRendererObj.drawString(module.getName(), x + 7, y + 5, color);
+                fontRendererObj.drawString(module.getName(), x + 7, y + 5, module.isEnabled() ? PURPLE : 0xFFB8B8C5);
                 Gui.drawRect(x + PANEL_WIDTH - 17, y + 5, x + PANEL_WIDTH - 7, y + 13,
                         module.isEnabled() ? PURPLE : 0xFF555563);
             }
         }
+        drawSettingsPanel(mouseX, mouseY);
         fontRendererObj.drawString("Haru2.0", 8, 8, PURPLE);
-        fontRendererObj.drawString("Right Shift: close", 8, 20, 0xFFAAAAAA);
+        fontRendererObj.drawString("Right-click a module for settings | Right Shift: close", 8, 20, 0xFFAAAAAA);
         super.drawScreen(mouseX, mouseY, partialTicks);
+    }
+
+    private void drawSettingsPanel(int mouseX, int mouseY) {
+        if (selectedModule == null) return;
+        int x = Math.max(5, width - 166);
+        int y = TOP;
+        int panelWidth = 158;
+        int rows = Math.max(1, (height - TOP - 30) / ROW_HEIGHT);
+        int visible = Math.min(rows, selectedModule.getSettings().size());
+        Gui.drawRect(x, y, x + panelWidth, y + HEADER_HEIGHT + visible * ROW_HEIGHT + 4, BACKGROUND);
+        Gui.drawRect(x, y, x + panelWidth, y + HEADER_HEIGHT, HEADER);
+        Gui.drawRect(x, y, x + 3, y + HEADER_HEIGHT, PURPLE);
+        fontRendererObj.drawString(selectedModule.getName(), x + 9, y + 6, 0xFFFFFFFF);
+        for (int i = 0; i < visible; i++) {
+            Setting<?> setting = selectedModule.getSettings().get(i);
+            int rowY = y + HEADER_HEIGHT + i * ROW_HEIGHT;
+            boolean hovered = mouseX >= x && mouseX <= x + panelWidth && mouseY >= rowY && mouseY < rowY + ROW_HEIGHT;
+            Gui.drawRect(x + 2, rowY, x + panelWidth - 2, rowY + ROW_HEIGHT - 1, hovered ? ROW_HOVER : ROW);
+            String value = setting.getValue() instanceof Double
+                    ? String.format(java.util.Locale.US, "%.2f", (Double) setting.getValue())
+                    : String.valueOf(setting.getValue());
+            fontRendererObj.drawString(setting.getName(), x + 7, rowY + 5, 0xFFCCCCD6);
+            fontRendererObj.drawString(value, x + panelWidth - 7 - fontRendererObj.getStringWidth(value), rowY + 5, PURPLE);
+        }
+        if (selectedModule.getSettings().isEmpty()) {
+            fontRendererObj.drawString("No settings yet", x + 7, y + 27, 0xFFAAAAAA);
+        }
     }
 
     @Override
     protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
-        if (mouseButton == 0) {
-            int totalWidth = Category.values().length * PANEL_WIDTH + (Category.values().length - 1) * GAP;
-            int startX = Math.max(5, (width - totalWidth) / 2);
-            for (Category category : Category.values()) {
-                int x = startX + category.ordinal() * (PANEL_WIDTH + GAP);
-                if (mouseX < x || mouseX > x + PANEL_WIDTH || mouseY < TOP + HEADER_HEIGHT) continue;
-                List<Module> modules = HaruClient.getInstance().getModuleManager().getModules(category);
-                int row = (mouseY - TOP - HEADER_HEIGHT) / ROW_HEIGHT + scroll.get(category);
-                if (row >= 0 && row < modules.size()) modules.get(row).toggle();
+        if (selectedModule != null && mouseButton == 0) {
+            int x = Math.max(5, width - 166);
+            int y = TOP + HEADER_HEIGHT;
+            int row = (mouseY - y) / ROW_HEIGHT;
+            if (mouseX >= x && mouseX <= x + 158 && mouseY >= y) {
+                if (row >= 0 && row < selectedModule.getSettings().size()) {
+                    Setting<?> setting = selectedModule.getSettings().get(row);
+                    if (setting instanceof BooleanSetting) ((BooleanSetting) setting).toggle();
+                    else if (setting instanceof NumberSetting) {
+                        NumberSetting number = (NumberSetting) setting;
+                        if (mouseX < x + 80) number.decrease(); else number.increase();
+                    }
+                    return;
+                }
+            }
+        }
+
+        int totalWidth = Category.values().length * PANEL_WIDTH + (Category.values().length - 1) * GAP;
+        int startX = Math.max(5, (width - totalWidth) / 2);
+        for (Category category : Category.values()) {
+            int x = startX + category.ordinal() * (PANEL_WIDTH + GAP);
+            if (mouseX < x || mouseX > x + PANEL_WIDTH || mouseY < TOP + HEADER_HEIGHT) continue;
+            List<Module> modules = HaruClient.getInstance().getModuleManager().getModules(category);
+            int row = (mouseY - TOP - HEADER_HEIGHT) / ROW_HEIGHT + scroll.get(category);
+            if (row >= 0 && row < modules.size()) {
+                Module module = modules.get(row);
+                if (mouseButton == 0) module.toggle();
+                else if (mouseButton == 1) selectedModule = module;
             }
         }
         super.mouseClicked(mouseX, mouseY, mouseButton);
@@ -102,7 +152,5 @@ public class ClickGUI extends GuiScreen {
     }
 
     @Override
-    public boolean doesGuiPauseGame() {
-        return false;
-    }
+    public boolean doesGuiPauseGame() { return false; }
 }
