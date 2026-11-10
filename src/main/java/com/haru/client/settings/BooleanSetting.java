@@ -5,7 +5,7 @@ public class BooleanSetting extends Setting<Boolean> {
         super(name, defaultValue);
     }
 
-    public boolean isEnabled() {
-        return getValue();
+    public void toggle() {
+        setValue(!getValue());
     }
 }
