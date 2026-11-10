@@ -1,0 +1,11 @@
+[
+  {
+    "modid": "haru",
+    "name": "Haru2.0",
+    "description": "An original modular Minecraft 1.8.9 client.",
+    "version": "${version}",
+    "mcversion": "${mcversion}",
+    "authorList": ["Haru Team"],
+    "clientSideOnly": true
+  }
+]
