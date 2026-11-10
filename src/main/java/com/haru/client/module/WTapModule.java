@@ -31,7 +31,7 @@ public class WTapModule extends Module {
         if (!player.isSprinting()) return;
         restoreSprint = true;
         player.setSprinting(false);
-        restoreAt = System.currentTimeMillis() + (long) delay.getValue();
+        restoreAt = System.currentTimeMillis() + delay.getValue().longValue();
     }
 
     @SubscribeEvent
