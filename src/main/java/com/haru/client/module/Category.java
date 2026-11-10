@@ -1,10 +1,12 @@
 package com.haru.client.module;
 
 public enum Category {
+    SETTINGS("Settings"),
     COMBAT("Combat"),
-    MOVEMENT("Movement"),
-    RENDER("Render"),
-    MISC("Misc");
+    PLAYER("Player"),
+    OTHER("Other"),
+    VISUALS("Visuals"),
+    EXPLOIT("Exploit");
 
     private final String displayName;
 
